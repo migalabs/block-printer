@@ -32,9 +32,6 @@ def parseClients():
     df = df.sort_values(by=['f_slot'])
 
     knownDF = df[df['f_client'] != "Unknown"]
-    print('len(df):', len(df))
-    print('len(knownDF):', len(knownDF))
-    exit()
     knownDF = knownDF[['f_slot', 'f_client']]
     knownDF = knownDF.reset_index(drop=True)
 
