@@ -18,7 +18,7 @@ def parseGraffiti(f_graffiti):
     if type(f_graffiti) != str or len(f_graffiti) < 4:
         return ("Unknown")
     for client in consensus.values():
-        if client in f_graffiti:
+        if client.lower() in f_graffiti.lower():
             return client
     if f_graffiti[4] not in consensus:
         return ("Unknown")
@@ -32,6 +32,9 @@ def parseClients():
     df = df.sort_values(by=['f_slot'])
 
     knownDF = df[df['f_client'] != "Unknown"]
+    print('len(df):', len(df))
+    print('len(knownDF):', len(knownDF))
+    exit()
     knownDF = knownDF[['f_slot', 'f_client']]
     knownDF = knownDF.reset_index(drop=True)
 
