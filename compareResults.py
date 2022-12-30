@@ -3,7 +3,7 @@
 import os
 import pandas as pd
 import numpy as np
-from time import sleep
+import time
 import requests
 import json
 from dotenv import load_dotenv
@@ -51,27 +51,40 @@ def get_validator_proposed_blocks(init_block, end_block):
     return response
 
 
-def getGuessesBlockprint(rocketDF):
-    bestGuesses = []
+def getGuessesBlockprint(init_block, end_block):
+    bestGuesses = {}
+    block_guesses = get_validator_proposed_blocks(init_block, end_block)
 
-    for i in rocketDF.index:
-        block = rocketDF['f_slot'][i]
-        guesses = get_validator_proposed_blocks(block, block + 1)
-        bestGuesses.append(guesses[0]['best_guess_single'])
+    for block in block_guesses:
+        bestGuesses[block['slot']] = block['best_guess_single']
+
     return bestGuesses
 
 
+def compareGuesses(rocketDF, bestGuesses):
+    matches = [True]*len(rocketDF)
+
+    for i in range(len(rocketDF)):
+        matches[i] = rocketDF['f_client'].iloc[i] == bestGuesses[rocketDF['f_slot'].iloc[i]]
+    return matches
+
+
 def main():
+    start = time.time()
     # add '.head(x)' to the end of the line below to test with a smaller dataset, x being the number of rows
     rocketDF = parseClients()
-    bestGuesses = getGuessesBlockprint(rocketDF)
-    rocketDF['f_guess'] = bestGuesses
-    rocketDF['match'] = np.where(
-        rocketDF['f_client'] == rocketDF['f_guess'], True, False)
+
+    init_block = rocketDF['f_slot'].iloc[0]
+    end_block = rocketDF['f_slot'].iloc[-1]
+
+    bestGuesses = getGuessesBlockprint(init_block, end_block + 1)
+
+    rocketDF['match'] = compareGuesses(rocketDF, bestGuesses)
     rocketDF.to_csv('result.csv')
 
     matchingPercertage = rocketDF.match.value_counts()[True] / len(rocketDF)
-
+    end = time.time()
+    print('It took {:.2f} seconds to compare the results'.format(end - start))
     print('We have a matching percentage of {:.2f}%'.format(
         matchingPercertage * 100))
 
