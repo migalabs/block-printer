@@ -22,12 +22,9 @@ def getClientGuess():
     except ValueError:
         return jsonify({'error': 'Invalid request, slot must be an integer'}), 500
 
-    print('add_to_model', add_to_model)
-    print('node_url', node_url)
-
     res = getSlotGuess(slot, model_folder, node_url, add_to_model=add_to_model)
     if res is None:
-        return jsonify({'error': 'Slot is empty or could not be downloaded'}), 500
+        return jsonify({'error': 'Model folder doesn\'t exists or Slot is empty or could not be downloaded'}), 500
 
     return jsonify(res), 200
 

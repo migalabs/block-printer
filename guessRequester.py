@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 
 import argparse
+import os
 import blockprint.knn_classifier as knn
 import blockprint.load_blocks as lb
 import blockprint.prepare_training_data as pt
 
-DEFAULT_MODEL_FOLDER = 'blockprint/testdata_proc/'
+DEFAULT_MODEL_FOLDER = 'blockprint/model/'
 DEFAULT_NODE_URL = 'http://localhost:5052'
 
 def parse_args():
@@ -25,7 +26,9 @@ def getSlotGuess(slot, model_folder=DEFAULT_MODEL_FOLDER, node_url=DEFAULT_NODE_
     model_folder = model_folder or DEFAULT_MODEL_FOLDER
     node_url = node_url or DEFAULT_NODE_URL
 
-    print(add_to_model)
+    if (not os.path.exists(model_folder)):
+        print(f"Model folder {model_folder} does not exist")
+        return None
 
     # Load the model
     classifier = knn.Classifier(model_folder)
