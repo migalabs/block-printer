@@ -4,6 +4,16 @@ This file contains all the requirements, documentation and steps to setup a [`si
 
 ## Requirements
 
+#### Have a ``lighthouse`` node running
+
+#### Have a 'trained model'
+Have trained a model using [`blockprint`](https://github.com/sigp/blockprint)
+
+To do so:
+- Clone the repository
+- Have a `lighthouse` node running and synced
+- ``$ cd blockprint``
+- Follow the following instructions [`here`](https://github.com/sigp/blockprint#training-the-classifier)
 
 ## Documentation - Relevant Links
 
@@ -31,7 +41,7 @@ python3 guessRequester.py [-h] [--add-to-model] [--node-url NODE_URL] model_fold
 ```
 - `--add-to-model` : If this flag is set, the script will add the guess to the model data, only if the guess was made thanks to the graffity
 - `--node-url` : The url of the node to use to fetch the data from the blockchain (default: `http://localhost:5052`)
-- `model_folder` : The folder containing the model data. You can use the `blockprint/model` folder in the repository
+- `model_folder` : The folder containing the model data
 - `slot` : The block slot to have a guess for
 
 ### Using the server
