@@ -22,16 +22,7 @@ def add_to_model_if_possible(model_folder, block_reward):
     if client is not None:
         lb.store_block_rewards(block_reward[0], client, model_folder)
 
-def getSlotGuess(slot, model_folder=DEFAULT_MODEL_FOLDER, node_url=DEFAULT_NODE_URL, add_to_model=False):
-    model_folder = model_folder or DEFAULT_MODEL_FOLDER
-    node_url = node_url or DEFAULT_NODE_URL
-
-    if (not os.path.exists(model_folder)):
-        print(f"Model folder {model_folder} does not exist")
-        return None
-
-    # Load the model
-    classifier = knn.Classifier(model_folder)
+def getSlotGuess(slot, classifier, model_folder=DEFAULT_MODEL_FOLDER, node_url=DEFAULT_NODE_URL, add_to_model=False):
 
     # Load the block
     try:
@@ -53,13 +44,20 @@ def getSlotGuess(slot, model_folder=DEFAULT_MODEL_FOLDER, node_url=DEFAULT_NODE_
 
 def main():
     args = parse_args()
-    model_folder = args.model_folder
+    model_folder = args.model_folder or DEFAULT_MODEL_FOLDER
     slot = args.slot
     add_to_model = args.add_to_model
-    node_url = args.node_url
+    node_url = args.node_url or DEFAULT_NODE_URL
+
+    if (not os.path.exists(model_folder)):
+        print(f"Model folder {model_folder} does not exist")
+        return None
+
+    # Load the model
+    classifier = knn.Classifier(model_folder)
 
     # Make a guess
-    res = getSlotGuess(slot, model_folder, node_url, add_to_model=add_to_model)
+    res = getSlotGuess(slot, classifier, model_folder, node_url, add_to_model=add_to_model)
     if res is None:
         print(f"Slot {slot} is empty or could not be downloaded")
         return None
