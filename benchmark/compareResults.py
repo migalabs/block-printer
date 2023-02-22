@@ -2,14 +2,15 @@
 
 import os
 from sys import argv as av
-from dataclasses import astuple, dataclass, field, fields
+from dataclasses import dataclass, field
 import pandas as pd
 import time
 import requests
 import json
 from dotenv import load_dotenv
 import matplotlib.pyplot as plt
-import seaborn as sns
+
+from Parser import Parser
 
 load_dotenv()
 
@@ -263,6 +264,15 @@ def compareResults(fileName):
 
 
 def main():
+    '''
+    Main function
+    The csv file must contain at least the following columns:
+    "f_slot","f_graffiti"
+    '''
+    parser = Parser()
+    arguments = parser.parse_args()
+    print(arguments)
+    exit()
 
     fileName = 'rocket-pool-proposals.csv' if len(av) < 2 else av[1]
     compareResults(fileName)
