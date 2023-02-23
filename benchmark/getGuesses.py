@@ -15,8 +15,10 @@ def get_validator_proposed_blocks(init_block, end_block, api_url):
     '''
 
     url = f"{api_url}/{init_block}/{end_block}"
-    response = json.loads(requests.get(url).text)
-    return response
+    response = requests.get(url)
+    response.raise_for_status()
+
+    return json.loads(response.text)
 
 
 def getBlockprintGuesses(init_block, end_block, api_url):
@@ -29,13 +31,18 @@ def getBlockprintGuesses(init_block, end_block, api_url):
     # call to the API to get the guesses
     print(f"[INFO] Getting guesses from {init_block} to {end_block}...")
     start = time.time()
-    block_guesses = get_validator_proposed_blocks(init_block, end_block, api_url)
+    try:
+        block_guesses = get_validator_proposed_blocks(init_block, end_block, api_url)
+    except Exception as e:
+        print(f'[ERROR] Error requesting guesses from {init_block} to {end_block}: {e}')
+        exit(1)
+
     end = time.time()
     print("[INFO] Getting guesses took %.2f seconds" % (end - start))
 
-    if type(block_guesses) == dict:
-        print(f"[ERROR] requesting guesses from {init_block} to {end_block} failed")
-        sys.exit(1)
+    # if type(block_guesses) == dict:
+        # print(f"[ERROR] requesting guesses from {init_block} to {end_block} failed")
+        # sys.exit(1)
 
     # get the guess for each block and add it to the dictionary with the slot as key
     for block in block_guesses:
