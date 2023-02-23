@@ -40,10 +40,6 @@ def getBlockprintGuesses(init_block, end_block, api_url):
     end = time.time()
     print("[INFO] Getting guesses took %.2f seconds" % (end - start))
 
-    # if type(block_guesses) == dict:
-        # print(f"[ERROR] requesting guesses from {init_block} to {end_block} failed")
-        # sys.exit(1)
-
     # get the guess for each block and add it to the dictionary with the slot as key
     for block in block_guesses:
         guesses[block['slot']] = BlockGuess.from_json(block)
