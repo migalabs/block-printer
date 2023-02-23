@@ -68,12 +68,10 @@ class Comparer:
         guesses from the Blockprint API for the same blocks in order to get the accuracy of the Blockprint API
         '''
 
-
-
         # get the parsed clients dataframe from the csv file
         # add '.head(x)' to the end of the line below to test with a smaller dataset
         # x being the number of rows
-        rocketDF = self._parser.parseClients(arguments).head(5)
+        rocketDF = self._parser.parseClients(arguments) # .head(x)
 
         # get the first and last block of the dataset and  get the best guesses from the API
         init_block, end_block = rocketDF['f_slot'].iloc[0], rocketDF['f_slot'].iloc[-1]
