@@ -2,6 +2,7 @@
 
 import argparse
 import os
+import sys
 import blockprint.knn_classifier as knn
 import blockprint.load_blocks as lb
 import blockprint.prepare_training_data as pt
@@ -19,24 +20,29 @@ def parse_args():
 
 def add_to_model_if_possible(model_folder, block_reward):
     client = pt.classify_reward_by_graffiti(block_reward[0])
-    if client is not None:
-        lb.store_block_rewards(block_reward[0], client, model_folder)
+    if client is None:
+        print("[INFO] Client couldn't be determined with graffity so can not be added to the model")
+        return
+    lb.store_block_rewards(block_reward[0], client, model_folder)
+    print("[INFO] Added to model")
 
 def getSlotGuess(slot, classifier, model_folder=DEFAULT_MODEL_FOLDER, node_url=DEFAULT_NODE_URL, add_to_model=False):
 
     # Load the block
+    print(f"[INFO] downloading block reward for block {slot}...")
     try:
         block_reward = lb.download_block_rewards(slot, slot+1, node_url)
     except Exception as e:
-        print(f'Error downloading block {slot}: {e}')
+        print(f'[ERROR] Error downloading block {slot}: {e}', file=sys.stderr)
         return None
 
     if len(block_reward) == 0:
-        print(f"Slot {slot} is empty")
+        print(f"[INFO] Slot {slot} is empty")
         return None
 
     # Add the block to the model if it has a graffiti and add_to_model arg is set
     if add_to_model:
+        print(f"[INFO] Adding block {slot} to model...")
         add_to_model_if_possible(model_folder, block_reward)
 
     # Return the guess
@@ -50,22 +56,23 @@ def main():
     node_url = args.node_url or DEFAULT_NODE_URL
 
     if (not os.path.exists(model_folder)):
-        print(f"Model folder {model_folder} does not exist")
+        print(f"[ERROR] Model folder {model_folder} does not exist", file=sys.stderr)
         return None
 
     # Load the model
+    print("[INFO] Loading Classifier...")
     classifier = knn.Classifier(model_folder)
+    print("[INFO] Classifier loaded")
 
     # Make a guess
     res = getSlotGuess(slot, classifier, model_folder, node_url, add_to_model=add_to_model)
     if res is None:
-        print(f"Slot {slot} is empty or could not be downloaded")
-        return None
+        return
 
     label, multilabel, prob_by_client, graffiti_guess = res
 
     # Print the guess
-    print(f"Slot {slot} was mined by {label} with probability {prob_by_client[label]}")
+    print(f"\nSlot {slot} was mined by {label} with probability {prob_by_client[label]}")
     return label
 
 if __name__ == "__main__":

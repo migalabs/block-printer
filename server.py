@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
+import json
 import os
+import sys
 from flask import Flask, request, jsonify
 from guessRequester import getSlotGuess
 import blockprint.knn_classifier as knn
@@ -13,6 +15,10 @@ node_url = 'http://localhost:5052'
 model_folder = 'blockprint/model/'
 add_to_model = None
 classifier = None
+
+@app.route('/', methods=['GET'])
+def notFound():
+    return jsonify({"status": 404})
 
 @app.route('/getClientGuess', methods=['GET'])
 def getClientGuess():
@@ -32,6 +38,8 @@ def getClientGuess():
     if res is None:
         return jsonify({'error': 'Model folder doesn\'t exists or Slot is empty or could not be downloaded'}), 500
 
+    # print the guess probabilities with json format
+    print(f"[INFO] Model guess:\n", json.dumps(res, indent=4, sort_keys=True))
     return jsonify(res), 200
 
 def parse_args():
@@ -48,10 +56,13 @@ if __name__ == "__main__":
     node_url = args.node_url
 
     if (not os.path.exists(model_folder)):
-        print(f"Model folder {model_folder} does not exist")
+        print(f"[ERROR] Model folder {model_folder} does not exist", file=sys.stderr)
         exit(1)
     
     # Load the model
+    print("[INFO] Loading Classifier...")
     classifier = knn.Classifier(model_folder)
+    print("[INFO] Classifier loaded")
 
+    print("[INFO] APP RUNNING")
     app.run()
