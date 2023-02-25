@@ -3,6 +3,7 @@
 import json
 import os
 import sys
+import time
 from flask import Flask, request, jsonify
 from guessRequester import getSlotGuess
 import blockprint.knn_classifier as knn
@@ -61,8 +62,10 @@ if __name__ == "__main__":
     
     # Load the model
     print("[INFO] Loading Classifier...")
+    start = time.time()
     classifier = knn.Classifier(model_folder)
-    print("[INFO] Classifier loaded")
+    end = time.time()
+    print("[INFO] Classifier loaded, took %.2f seconds" % (end - start))
 
     print("[INFO] APP RUNNING")
     app.run()
