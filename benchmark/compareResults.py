@@ -2,6 +2,7 @@
 
 import os
 import time
+import logging
 from dotenv import load_dotenv
 
 from Compare import Comparer
@@ -18,6 +19,12 @@ def main():
     The csv file must contain at least the following columns:
     "f_slot","f_graffiti"
     '''
+
+    logging.basicConfig(level=logging.INFO,
+                        format='%(levelname)s - %(message)s')
+    logging.basicConfig(level=logging.ERROR,
+                        format='%(levelname)s - %(message)s')
+
     parser = Parser()
     arguments = parser.parse_args()
     arguments.api_url = API_URL
@@ -32,8 +39,8 @@ def main():
     if arguments.timer:
         # end timer
         end = time.time()
-        print("\n[INFO] Comparing guesses took %.2f seconds" % (end - start))
-    
+        logging.info("Comparing guesses took %.2f seconds" % (end - start))
+
     # analyze the results and plot them if needed
     comparer.analyzeResults(finalDF, arguments.plot)
 

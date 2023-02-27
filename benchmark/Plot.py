@@ -52,11 +52,11 @@ class Plot:
     def getVisualRepresentation(self):
         # plot the distribution of the clients for all the blocks
         self.plotBarChart(self._rocketPoolDF, 'Distribution of the clients guesses for all the blocks',
-                     'Clients', 'Percentage (%)')
+                          'Clients', 'Percentage (%)')
 
         # plot the distribution of the clients for the unmatched blocks
         self.plotBarChart(self._unmatchedDF, 'Distribution of the clients guesses for the unmatched blocks',
-                     'Clients', 'Percentage (%)')
+                          'Clients', 'Percentage (%)')
         plt.show()
 
     def getMatchingPercentageForEach(self):

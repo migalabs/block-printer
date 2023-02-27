@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import json
+import logging
 import sys
 import time
 import requests
@@ -27,18 +28,21 @@ def getBlockprintGuesses(init_block, end_block, api_url):
     return: a dictionary with the block slot as key and the best guess as value
     '''
 
+    logging.basicConfig(level=logging.INFO, format='%(levelname)s - %(message)s')
+    logging.basicConfig(level=logging.ERROR, format='%(levelname)s - %(message)s')
+
     guesses = {}
     # call to the API to get the guesses
-    print(f"[INFO] Getting guesses from {init_block} to {end_block}...")
+    logging.info(f"Getting guesses from {init_block} to {end_block}...")
     start = time.time()
     try:
         block_guesses = get_validator_proposed_blocks(init_block, end_block, api_url)
     except Exception as e:
-        print(f'[ERROR] Error requesting guesses from {init_block} to {end_block}: {e}')
+        logging.error(f"Error requesting guesses from {init_block} to {end_block}: {e}")
         exit(1)
 
     end = time.time()
-    print("[INFO] Getting guesses took %.2f seconds" % (end - start))
+    logging.info("Getting guesses took %.2f seconds" % (end - start))
 
     # get the guess for each block and add it to the dictionary with the slot as key
     for block in block_guesses:
