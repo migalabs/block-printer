@@ -10,4 +10,4 @@ Our contribution to the sigp/block-print repo contains the tools and scripts we 
 This repo contains:
 - [`sigp/block-print`](https://github.com/sigp/blockprint) setup guide the to have the model locally running - chekc the [`infrastructure-setup.md`](https://github.com/migalabs/block-printer/blob/main/infrastructure-setup.md) file.
 - A `server.py` exposeing an API where to ask to clasify a valid Slot in the network where the Ethereum CL node is synced. (only supported Lighthouse nodes)   
-- A set of python scripts to the accuracy of the model by comparing it with the set of control validators (Rocket Pool, Client Teams' validators, etc.)
+- A set of python scripts to measure the accuracy of the model by comparing it with the set of control validators (Rocket Pool, Client Teams' validators, etc.)
