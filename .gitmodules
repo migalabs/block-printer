@@ -1,0 +1,3 @@
+[submodule "blockprint"]
+	path = blockprint
+	url = https://github.com/sigp/blockprint
