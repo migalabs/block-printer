@@ -1,0 +1,4 @@
+[submodule "blockprint"]
+	path = blockprint
+	url = https://github.com/migalabs/blockprint.git
+	branch = migalabs-printer
