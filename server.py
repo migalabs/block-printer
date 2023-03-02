@@ -13,7 +13,7 @@ import argparse
 app = Flask(__name__)
 
 node_url = 'http://localhost:5052'
-model_folder = 'blockprint/model/'
+model_folder = 'model/'
 add_to_model = None
 classifier = None
 
@@ -43,7 +43,8 @@ def getClientGuess():
         return jsonify({'error': 'Model folder doesn\'t exists or Slot is empty or could not be downloaded'}), 500
 
     # print the guess probabilities with json format
-    logging.info(f"Model guess:\n", json.dumps(res, indent=4, sort_keys=True))
+    json_str = json.dumps(res, indent=4, sort_keys=True)
+    logging.info(f"Model guess:\n{json_str}")
     return jsonify(res), 200
 
 
