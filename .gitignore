@@ -1,3 +1,6 @@
 *.csv
 .env
 __pycache__/
+model/
+training_data/
+*.sqlite
