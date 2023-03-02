@@ -4,10 +4,7 @@ This file contains all the requirements, documentation and steps to setup a [`si
 
 ## Requirements
 
-### Have a ``lighthouse`` node running
-
-### Have a 'trained model'
-Have trained a model using [`blockprint`](https://github.com/sigp/blockprint)
+### Prepare the model
 
 To do so:
 - Clone this repository using the following command (so the submodules are also cloned)
@@ -25,6 +22,8 @@ You can run `./prepare_training_data.py -h` for more information and options
 `training_data_folder` being the folder where the blocks rewards, downloaded thanks to Lighthouse, will be stored
 
 `model_folder` is the folder where the model data will be stored
+
+___
 
 
 ## Documentation - Relevant Links
