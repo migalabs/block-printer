@@ -3,11 +3,12 @@
 import argparse
 import logging
 import os
-import sys
+import json
 import time
 import blockprint.knn_classifier as knn
 import blockprint.load_blocks as lb
 import blockprint.prepare_training_data as pt
+import threading
 
 DEFAULT_MODEL_FOLDER = 'blockprint/model/'
 DEFAULT_NODE_URL = 'http://localhost:5052'
@@ -36,6 +37,64 @@ def add_to_model_if_possible(model_folder, block_reward):
     logging.info(f"Added to model")
 
 
+class ComputeGuessesThread(threading.Thread):
+    def __init__(self, start_slot, end_slot, classifier, model_folder, node_url, add_to_model):
+        super().__init__()
+        self.start_slot = start_slot
+        self.end_slot = end_slot
+        self.classifier = classifier
+        self.model_folder = model_folder
+        self.node_url = node_url
+        self.add_to_model = add_to_model
+        self.guesses = None
+
+    def run(self):
+        self.guesses = []
+        for slot in range(self.start_slot, self.end_slot + 1):
+            guess = getSlotGuess(slot, self.classifier, self.model_folder,
+                                 self.node_url, add_to_model=self.add_to_model)
+            if guess is None:
+                self.guesses = None
+                return
+            best_guess_single, best_guess_multi, probability_map, _ = guess
+            json_str = json.dumps(guess, indent=4, sort_keys=True)
+            logging.info(f"Model guess:\n{json_str}")
+            self.guesses.append({"slot": slot, "best_guess_single": best_guess_single, "best_guess_multi": best_guess_multi,
+                                "probability_map": probability_map})
+
+    def result(self):
+        return self.guesses
+
+
+def getSlotsGuesses(start_slot, end_slot, classifier, model_folder=DEFAULT_MODEL_FOLDER, node_url=DEFAULT_NODE_URL, add_to_model=False):
+    # Define the number of threads to use
+    num_threads = 16
+
+    # Compute the number of slots per thread
+    slots_per_thread = (end_slot - start_slot + 1) // num_threads
+
+    # Create the threads and start them
+    threads = []
+    for i in range(num_threads):
+        start = start_slot + i * slots_per_thread
+        end = start + slots_per_thread - 1 if i < num_threads - 1 else end_slot
+        t = ComputeGuessesThread(
+            start, end, classifier, model_folder, node_url, add_to_model)
+        threads.append(t)
+        t.start()
+
+    # Wait for all threads to finish and collect their results
+    guesses = []
+    for t in threads:
+        t.join()
+        result = t.result()
+        if result is None:
+            return None
+        guesses.extend(result)
+
+    return guesses
+
+
 def getSlotGuess(slot, classifier, model_folder=DEFAULT_MODEL_FOLDER, node_url=DEFAULT_NODE_URL, add_to_model=False):
 
     # Load the block
@@ -45,7 +104,6 @@ def getSlotGuess(slot, classifier, model_folder=DEFAULT_MODEL_FOLDER, node_url=D
     except Exception as e:
         logging.error(f"Error downloading block {slot}: {e}")
         return None
-
     if len(block_reward) == 0:
         logging.info(f"Slot {slot} is empty")
         return None
