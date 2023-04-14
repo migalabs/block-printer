@@ -5,7 +5,7 @@ import os
 import time
 import logging
 from flask import Flask, request, jsonify
-from guessRequester import getSlotGuess
+from guessRequester import getSlotsGuesses
 import blockprint.knn_classifier as knn
 
 import argparse
@@ -27,25 +27,33 @@ def notFound():
 def getClientGuess():
     args = (request.args).to_dict()
 
-    slot = args.get('slot')
+    start_slot = args.get('start_slot')
+    end_slot = args.get('end_slot')
 
-    if slot is None:
-        return jsonify({'error': 'Invalid request, please provide slot'}), 500
+    if start_slot is None:
+        return jsonify({'error': 'Invalid request, please provide start_slot'}), 500
 
     try:
-        slot = int(slot)
+        start_slot = int(start_slot)
+        if end_slot is not None:
+            end_slot = int(end_slot)
     except ValueError:
-        return jsonify({'error': 'Invalid request, slot must be an integer'}), 500
+        return jsonify({'error': 'Invalid request, slots must be integers'}), 500
 
-    res = getSlotGuess(slot, classifier, model_folder,
-                       node_url, add_to_model=add_to_model)
-    if res is None:
-        return jsonify({'error': 'Model folder doesn\'t exists or Slot is empty or could not be downloaded'}), 500
+    if end_slot is not None and end_slot < start_slot:
+        return jsonify({'error': 'Invalid request, end_slot must be greater than start_slot'}), 500
 
-    # print the guess probabilities with json format
-    json_str = json.dumps(res, indent=4, sort_keys=True)
-    logging.info(f"Model guess:\n{json_str}")
-    return jsonify(res), 200
+    if end_slot is None:
+        end_slot = start_slot
+
+    if end_slot - start_slot > 100:
+        end_slot = start_slot + 100
+
+    guesses = getSlotsGuesses(start_slot, end_slot, classifier,
+                              model_folder, node_url, add_to_model=add_to_model)
+    if guesses is None:
+        return jsonify({'error': 'Error getting guesses'}), 500
+    return jsonify(guesses), 200
 
 
 def parse_args():
