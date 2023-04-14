@@ -9,7 +9,7 @@ import blockprint.knn_classifier as knn
 import blockprint.load_blocks as lb
 import blockprint.prepare_training_data as pt
 import threading
-
+import requests
 DEFAULT_MODEL_FOLDER = 'blockprint/model/'
 DEFAULT_NODE_URL = 'http://localhost:5052'
 
@@ -58,7 +58,7 @@ class ComputeGuessesThread(threading.Thread):
                 return
             best_guess_single, best_guess_multi, probability_map, _ = guess
             json_str = json.dumps(guess, indent=4, sort_keys=True)
-            logging.info(f"Model guess:\n{json_str}")
+            # logging.info(f"Model guess:\n{json_str}")
             self.guesses.append({"slot": slot, "best_guess_single": best_guess_single, "best_guess_multi": best_guess_multi,
                                 "probability_map": probability_map})
 
@@ -101,12 +101,18 @@ def getSlotGuess(slot, classifier, model_folder=DEFAULT_MODEL_FOLDER, node_url=D
     logging.info(f"Downloading block {slot}...")
     try:
         block_reward = lb.download_block_rewards(slot, slot+1, node_url)
+    except requests.exceptions.HTTPError as e:
+        if e.response.status_code == 400:
+            logging.error(f"Error downloading block {slot}: {e}")
+            return (None, None, None, None)
+        else:
+            raise e  # Re-raise the exception for other status codes
     except Exception as e:
         logging.error(f"Error downloading block {slot}: {e}")
         return None
     if len(block_reward) == 0:
         logging.info(f"Slot {slot} is empty")
-        return None
+        return (None, None, None, None)
 
     # Add the block to the model if it has a graffiti and add_to_model arg is set
     if add_to_model:
