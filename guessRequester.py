@@ -19,7 +19,10 @@ def parse_args():
         description='Request a guess for a given slot')
     parser.add_argument('model_folder', default=DEFAULT_MODEL_FOLDER,
                         type=str, help='Path to the folder with model files')
-    parser.add_argument('slot', type=int, help='Slot to request a guess for')
+    parser.add_argument('start_slot', type=int,
+                        help='Start Slot to request a guess for')
+    parser.add_argument(
+        'end_slot', type=int, nargs='?', help='End Slot to request a guess for. If not provided, only the start slot will be requested')
     parser.add_argument('--add-to-model', default=False, action='store_true',
                         help='Add the block to the model if client could be identified with graffiti')
     parser.add_argument('--node-url', default=DEFAULT_NODE_URL, type=str,
@@ -130,8 +133,13 @@ def main():
                         format='%(levelname)s - %(message)s')
 
     args = parse_args()
+    start_slot = args.start_slot
+    end_slot = args.end_slot or args.start_slot
+
+    if end_slot < start_slot:
+        logging.error("End slot must be greater than start slot")
+        return None
     model_folder = args.model_folder or DEFAULT_MODEL_FOLDER
-    slot = args.slot
     add_to_model = args.add_to_model
     node_url = args.node_url or DEFAULT_NODE_URL
 
@@ -146,19 +154,25 @@ def main():
     end = time.time()
     logging.info("Classifier loaded, took %.2f seconds" % (end - start))
 
-    # Make a guess
-    res = getSlotGuess(slot, classifier, model_folder,
-                       node_url, add_to_model=add_to_model)
-    if res is None:
-        logging.error(f"Could not make a guess for slot {slot}")
-        return
+    # Make guesses for all slots
+    guesses = getSlotsGuesses(start_slot, end_slot, classifier, model_folder,
+                              node_url, add_to_model=add_to_model)
 
-    label, multilabel, prob_by_client, graffiti_guess = res
+    if guesses is None:
+        logging.error("Error making guesses")
+        return None
 
-    # Print the guess
-    print(
-        f"\nSlot {slot} was mined by {label} with probability {prob_by_client[label]}")
-    return label
+    # Print the guesses
+    for guess in guesses:
+        slot = guess["slot"]
+        best_guess_single = guess["best_guess_single"]
+        best_guess_multi = guess["best_guess_multi"]
+        probability_map = guess["probability_map"]
+        logging.info(f"Slot {slot}:")
+        logging.info(f"Best guess (single): {best_guess_single}")
+        logging.info(f"Best guess (multi): {best_guess_multi}")
+        logging.info(f"Probability map: {probability_map}")
+    return guesses
 
 
 if __name__ == "__main__":
