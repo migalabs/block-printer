@@ -151,7 +151,6 @@ def main():
     for guess in guesses:
         if guess is None:
             continue
-        print(guess)
         slot = guess["slot"]
         best_guess_single = guess["best_guess_single"]
         best_guess_multi = guess["best_guess_multi"]
