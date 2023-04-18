@@ -10,7 +10,7 @@ import blockprint.prepare_training_data as pt
 import requests
 DEFAULT_MODEL_FOLDER = 'blockprint/model/'
 DEFAULT_NODE_URL = 'http://localhost:5052'
-MAX_SLOTS = 8000  # Maximum number of slots to request at once. Beacon node limits to a number around 9800, so this is a bit lower to be safe
+MAX_SLOTS = 10000
 
 
 def parse_args():
@@ -42,7 +42,6 @@ def add_to_model_if_possible(model_folder, block_reward):
 def getSlotGuesses(start_slot, end_slot, classifier, model_folder=DEFAULT_MODEL_FOLDER, node_url=DEFAULT_NODE_URL, add_to_model=False):
     if end_slot - start_slot > MAX_SLOTS:
         end_slot = start_slot + MAX_SLOTS
-
     guesses = []
     # Load the blocks
     logging.info(f"Downloading blocks {start_slot} to {end_slot}...")
@@ -61,25 +60,32 @@ def getSlotGuesses(start_slot, end_slot, classifier, model_folder=DEFAULT_MODEL_
     except Exception as e:
         logging.error(f"Error downloading blocks: {e}")
         return None
-    if len(block_rewards) == 0:
-        logging.info(f"Slots requested are empty")
-        return None
     end_time = time.time()
     logging.info(
         f"Downloaded {len(block_rewards)} blocks in {end_time - start_time} seconds")
-
-    for i, slot in enumerate(block_rewards):
+    block_rewards_index = 0
+    for i in range(end_slot-start_slot+1):
+        best_guess_multi = ""
+        best_guess_single = ""
+        probability_map = {}
+        proposer_index = None
         slot_num = start_slot + i
-        if add_to_model:
-            logging.info(f"Adding block {slot_num} to model...")
-            add_to_model_if_possible(model_folder, slot_num)
-        guess = classifier.classify(slot)
-        if guess is None:
-            guesses = None
-            return
-        best_guess_single, best_guess_multi, probability_map, _ = guess
+        if len(block_rewards) > 0:
+            slot = block_rewards[block_rewards_index]
+            if i == int(slot["meta"]["slot"]) - start_slot:
+                block_rewards_index += 1
+                if add_to_model:
+                    logging.info(f"Adding block {slot_num} to model...")
+                    add_to_model_if_possible(model_folder, slot_num)
+                guess = classifier.classify(slot)
+                if guess is None:
+                    guesses = None
+                    return
+                best_guess_single, best_guess_multi, probability_map, _ = guess
+                proposer_index = slot["meta"]["proposer_index"]
+
         guesses.append({"slot": slot_num, "best_guess_single": best_guess_single, "best_guess_multi": best_guess_multi,
-                        "probability_map": probability_map, "proposer_index": slot["meta"]["proposer_index"]})
+                        "probability_map": probability_map, "proposer_index": proposer_index})
     return guesses
 
 
