@@ -5,7 +5,7 @@ import os
 import time
 import logging
 from flask import Flask, request, jsonify
-from guessRequester import getSlotsGuesses
+from guessRequester import getSlotGuesses
 import blockprint.knn_classifier as knn
 
 import argparse
@@ -46,11 +46,8 @@ def getClientGuess():
     if end_slot is None:
         end_slot = start_slot
 
-    if end_slot - start_slot > 100:
-        end_slot = start_slot + 100
-
-    guesses = getSlotsGuesses(start_slot, end_slot, classifier,
-                              model_folder, node_url, add_to_model=add_to_model)
+    guesses = getSlotGuesses(start_slot, end_slot, classifier,
+                             model_folder, node_url, add_to_model=add_to_model)
     if guesses is None:
         return jsonify({'error': 'Error getting guesses'}), 500
     return jsonify(guesses), 200
