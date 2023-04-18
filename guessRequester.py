@@ -10,7 +10,7 @@ import blockprint.prepare_training_data as pt
 import requests
 DEFAULT_MODEL_FOLDER = 'blockprint/model/'
 DEFAULT_NODE_URL = 'http://localhost:5052'
-MAX_SLOTS = 10000
+MAX_SLOTS = 8000  # Maximum number of slots to request at once. Beacon node limits to a number around 9800, so this is a bit lower to be safe
 
 
 def parse_args():
