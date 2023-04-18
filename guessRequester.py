@@ -3,12 +3,10 @@
 import argparse
 import logging
 import os
-import json
 import time
 import blockprint.knn_classifier as knn
 import blockprint.load_blocks as lb
 import blockprint.prepare_training_data as pt
-import threading
 import requests
 DEFAULT_MODEL_FOLDER = 'blockprint/model/'
 DEFAULT_NODE_URL = 'http://localhost:5052'
@@ -41,37 +39,6 @@ def add_to_model_if_possible(model_folder, block_reward):
     logging.info(f"Added to model")
 
 
-class ComputeGuessesThread(threading.Thread):
-    def __init__(self, start_slot, downloaded_block_rewards, classifier, model_folder, node_url, add_to_model):
-        super().__init__()
-        self.downloaded_block_rewards = downloaded_block_rewards
-        self.start_slot = start_slot
-        self.classifier = classifier
-        self.model_folder = model_folder
-        self.node_url = node_url
-        self.add_to_model = add_to_model
-        self.guesses = None
-
-    def run(self):
-        self.guesses = []
-        for i, slot in enumerate(self.downloaded_block_rewards):
-            slot_num = self.start_slot + i
-            # Add the block to the model if it has a graffiti and add_to_model arg is set
-            if self.add_to_model:
-                logging.info(f"Adding block {slot_num} to model...")
-                add_to_model_if_possible(self.model_folder, slot_num)
-            guess = self.classifier.classify(slot)
-            if guess is None:
-                self.guesses = None
-                return
-            best_guess_single, best_guess_multi, probability_map, _ = guess
-            self.guesses.append({"slot": slot_num, "best_guess_single": best_guess_single, "best_guess_multi": best_guess_multi,
-                                "probability_map": probability_map})
-
-    def result(self):
-        return self.guesses
-
-
 def getSlotGuesses(start_slot, end_slot, classifier, model_folder=DEFAULT_MODEL_FOLDER, node_url=DEFAULT_NODE_URL, add_to_model=False):
     if end_slot - start_slot > MAX_SLOTS:
         end_slot = start_slot + MAX_SLOTS
@@ -85,8 +52,10 @@ def getSlotGuesses(start_slot, end_slot, classifier, model_folder=DEFAULT_MODEL_
             start_slot, end_slot, node_url)
     except requests.exceptions.HTTPError as e:
         if e.response.status_code == 400:
-            logging.error(f"Error downloading blocks: {e}")
-            return [(None, None, None, None)]
+            message = e.response.json()['message']
+            logging.error(
+                f"Error downloading blocks: {e}: {message}")
+            return None
         else:
             raise e  # Re-raise the exception for other status codes
     except Exception as e:
@@ -94,7 +63,7 @@ def getSlotGuesses(start_slot, end_slot, classifier, model_folder=DEFAULT_MODEL_
         return None
     if len(block_rewards) == 0:
         logging.info(f"Slots requested are empty")
-        return [(None, None, None, None)]
+        return None
     end_time = time.time()
     logging.info(
         f"Downloaded {len(block_rewards)} blocks in {end_time - start_time} seconds")
@@ -180,14 +149,19 @@ def main():
 
     # Print the guesses
     for guess in guesses:
+        if guess is None:
+            continue
+        print(guess)
         slot = guess["slot"]
         best_guess_single = guess["best_guess_single"]
         best_guess_multi = guess["best_guess_multi"]
         probability_map = guess["probability_map"]
+        proposer_index = guess["proposer_index"]
         logging.info(f"Slot {slot}:")
         logging.info(f"Best guess (single): {best_guess_single}")
         logging.info(f"Best guess (multi): {best_guess_multi}")
         logging.info(f"Probability map: {probability_map}")
+        logging.info(f"Proposer index: {proposer_index}")
     return guesses
 
 
