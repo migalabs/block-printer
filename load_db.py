@@ -9,6 +9,7 @@ from Postgres import Postgres, parse_db_endpoint_string
 DEFAULT_MODEL_FOLDER = "model"
 DEFAULT_NODE_URL = "http://localhost:5052"
 DEFAULT_BACKFILLING_BATCH_SIZE = 10000
+MAX_RETRIES = 5
 
 
 def parse_args():
@@ -71,6 +72,7 @@ def backfillSlots(
 ):
     done = False
     batch_size = DEFAULT_BACKFILLING_BATCH_SIZE
+    retries = 0
     while not done:
         try:
             loadSlotGuessesDatabase(
@@ -93,7 +95,15 @@ def backfillSlots(
                 continue
         except Exception as e:
             logging.error("Error while backfilling: {}".format(e))
-            raise e
+            if retries >= MAX_RETRIES:
+                logging.error("Max retries reached, aborting")
+                raise e
+            else:
+                retries += 1
+                logging.info("Retrying...")
+                time.sleep(5)
+                continue
+        retries = 0
         last_slot_saved += DEFAULT_BACKFILLING_BATCH_SIZE
 
 
