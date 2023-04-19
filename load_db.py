@@ -77,7 +77,7 @@ def backfillSlots(
         try:
             loadSlotGuessesDatabase(
                 last_slot_saved + 1,
-                last_slot_saved + DEFAULT_BACKFILLING_BATCH_SIZE,
+                last_slot_saved + batch_size,
                 classifier,
                 model_folder,
                 node_url,
