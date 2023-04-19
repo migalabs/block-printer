@@ -37,6 +37,13 @@ def parse_args():
         type=str,
         help="URL of the beacon node to download blocks from (default: http://localhost:5052)",
     )
+
+    parser.add_argument(
+        "--reindex",
+        action="store_true",
+        help="Reindex the database. WARNING: This will delete all data in the database and reindex all slots from the beacon node. Useful if the model was updated",
+    )
+
     return parser.parse_args()
 
 
@@ -115,6 +122,8 @@ def main():
     model_folder = args.model_folder or DEFAULT_MODEL_FOLDER
     add_to_model = args.add_to_model
     node_url = args.node_url or DEFAULT_NODE_URL
+    reindex = args.reindex or False
+    print("Reindex: {}".format(reindex))
     if not os.path.exists(model_folder):
         logging.error(f"Model folder {model_folder} does not exist")
         exit(1)
@@ -140,7 +149,7 @@ def main():
         "t_slot_client_guesses",
         "f_slot integer, f_best_guess_single text, f_best_guess_multi text, f_probability_map text[], f_proposer_index integer",
         "f_slot",
-        replace=False,
+        replace=reindex,
     )
     last_slot_saved = db.dict_query("SELECT MAX(f_slot) FROM t_slot_client_guesses")[0][
         "max"
