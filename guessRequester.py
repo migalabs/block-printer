@@ -14,6 +14,16 @@ DEFAULT_NODE_URL = "http://localhost:5052"
 MAX_SLOTS = 10000
 
 
+class GuessRequesterError(Exception):
+    def __init__(self, message):
+        super().__init__(message)
+        self.message = message
+
+
+class EndSlotUnkown(Exception):
+    pass
+
+
 def parse_args():
     parser = argparse.ArgumentParser(description="Request a guess for a given slot")
     parser.add_argument(
@@ -86,21 +96,24 @@ def getSlotGuesses(
         if e.response.status_code == 400:
             message = e.response.json()["message"]
             logging.error(f"Error downloading blocks: {e}: {message}")
+            if "block at end slot" in message:
+                raise EndSlotUnkown("End slot is unknown")
             return None
         else:
+            logging.error(f"Error downloading blocks: {e}")
             raise e  # Re-raise the exception for other status codes
     except Exception as e:
         logging.error(f"Error downloading blocks: {e}")
-        return None
+        raise e  # Re-raise the exception for other status codes
     end_time = time.time()
     logging.info(
-        f"Downloaded {len(block_rewards)} blocks in {end_time - start_time} seconds"
+        f"Downloaded {len(block_rewards)} blocks in {round(end_time - start_time, 2)} seconds. Found {end_slot - start_slot - len(block_rewards)+1} missing blocks."
     )
     block_rewards_index = 0
     for i in range(end_slot - start_slot + 1):
         best_guess_multi = ""
         best_guess_single = ""
-        probability_map = {}
+        probability_map = "{}"
         proposer_index = None
         slot_num = start_slot + i
         if len(block_rewards) > 0:
@@ -201,14 +214,18 @@ def main():
     logging.info("Classifier loaded, took %.2f seconds" % (end - start))
 
     # Make guesses for all slots
-    guesses = getSlotGuesses(
-        start_slot,
-        end_slot,
-        classifier,
-        model_folder,
-        node_url,
-        add_to_model=add_to_model,
-    )
+    try:
+        guesses = getSlotGuesses(
+            start_slot,
+            end_slot,
+            classifier,
+            model_folder,
+            node_url,
+            add_to_model=add_to_model,
+        )
+    except EndSlotUnkown as e:
+        logging.error(e)
+        exit(1)
 
     if guesses is None:
         logging.error("Error making guesses")
