@@ -3,11 +3,12 @@ import logging
 import os
 import time
 import blockprint.knn_classifier as knn
-from guessRequester import getSlotGuesses
+from guessRequester import getSlotGuesses, EndSlotUnkown
 from Postgres import Postgres, parse_db_endpoint_string
 
 DEFAULT_MODEL_FOLDER = "model"
 DEFAULT_NODE_URL = "http://localhost:5052"
+DEFAULT_BACKFILLING_BATCH_SIZE = 10000
 
 
 def parse_args():
@@ -17,9 +18,6 @@ def parse_args():
         default=DEFAULT_MODEL_FOLDER,
         type=str,
         help="Path to the folder with model files. Default: model",
-    )
-    parser.add_argument(
-        "--start-slot", type=int, default=0, help="Start Slot to request a guess for"
     )
     parser.add_argument(
         "postgres_endpoint",
@@ -39,6 +37,64 @@ def parse_args():
         help="URL of the beacon node to download blocks from (default: http://localhost:5052)",
     )
     return parser.parse_args()
+
+
+def loadSlotGuessesDatabase(
+    start_slot, end_slot, classifier, model_folder, node_url, add_to_model, db
+):
+    guesses = getSlotGuesses(
+        start_slot,
+        end_slot,
+        classifier,
+        model_folder,
+        node_url,
+        add_to_model,
+        db_format=True,
+    )
+
+    if guesses is not None:
+        db.insert_rows(
+            "t_slot_client_guesses",
+            (
+                "f_slot",
+                "f_best_guess_single",
+                "f_best_guess_multi",
+                "f_probability_map",
+                "f_proposer_index",
+            ),
+            guesses,
+        )
+
+
+def backfillSlots(
+    last_slot_saved, classifier, model_folder, node_url, add_to_model, db
+):
+    done = False
+    batch_size = DEFAULT_BACKFILLING_BATCH_SIZE
+    while not done:
+        try:
+            loadSlotGuessesDatabase(
+                last_slot_saved + 1,
+                last_slot_saved + DEFAULT_BACKFILLING_BATCH_SIZE,
+                classifier,
+                model_folder,
+                node_url,
+                add_to_model,
+                db,
+            )
+        except EndSlotUnkown:
+            if batch_size == 1:
+                done = True
+            else:
+                batch_size = int(batch_size / 2)
+                logging.info(
+                    "End slot unknown, reducing batch size to {}".format(batch_size)
+                )
+                continue
+        except Exception as e:
+            logging.error("Error while backfilling: {}".format(e))
+            raise e
+        last_slot_saved += DEFAULT_BACKFILLING_BATCH_SIZE
 
 
 def main():
@@ -74,27 +130,39 @@ def main():
         "t_slot_client_guesses",
         "f_slot integer, f_best_guess_single text, f_best_guess_multi text, f_probability_map text[], f_proposer_index integer",
         "f_slot",
-        replace=True,
+        replace=False,
     )
-    guesses = getSlotGuesses(
-        1, 2, classifier, model_folder, node_url, add_to_model, db_format=True
-    )
-    if guesses is None:
-        logging.error("Error getting guesses")
-        exit(1)
-    print(guesses)
-    print((guesses[0][3]))
-    db.insert_rows(
-        "t_slot_client_guesses",
-        (
-            "f_slot",
-            "f_best_guess_single",
-            "f_best_guess_multi",
-            "f_probability_map",
-            "f_proposer_index",
-        ),
-        guesses,
-    )
+    last_slot_saved = db.dict_query("SELECT MAX(f_slot) FROM t_slot_client_guesses")[0][
+        "max"
+    ]
+    if last_slot_saved is None:
+        last_slot_saved = 0
+    logging.info(f"Last slot saved: {last_slot_saved}")
+
+    logging.info("Backfilling slots...")
+    backfillSlots(last_slot_saved, classifier, model_folder, node_url, add_to_model, db)
+
+    last_slot_saved = db.dict_query("SELECT MAX(f_slot) FROM t_slot_client_guesses")[0][
+        "max"
+    ]
+
+    while True:
+        try:
+            loadSlotGuessesDatabase(
+                last_slot_saved + 1,
+                last_slot_saved + 1,
+                classifier,
+                model_folder,
+                node_url,
+                add_to_model,
+                db,
+            )
+        except EndSlotUnkown:
+            logging.info("End slot unknown, waiting for next slot")
+            time.sleep(1)
+            continue
+        last_slot_saved += 1
+        time.sleep(12)
 
 
 if __name__ == "__main__":
