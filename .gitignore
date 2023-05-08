@@ -5,3 +5,4 @@ model/
 training_data/
 *.sqlite
 venv
+.vscode
