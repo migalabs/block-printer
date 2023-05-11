@@ -1,0 +1,40 @@
+version: "3.7"
+
+services:
+  block-printer-load-db:
+    environment:
+      POSTGRES_ENDPOINT: ${POSTGRES_ENDPOINT}
+    image: block-printer-load-db:latest
+    build:
+      context: ./
+      dockerfile: ./load-db-docker/Dockerfile
+    container_name: block-printer-load-db-container
+    init: true
+    command: >-
+      --node-url
+      ${NODE_URL}
+      --model-folder
+      ${MODEL_PATH}
+      ${POSTGRES_ENDPOINT}
+    network_mode: "host"
+    volumes:
+      - ./${MODEL_PATH}:/app/${MODEL_PATH}
+      - ./${TRAINING_DATA_PATH}:/app/${TRAINING_DATA_PATH}
+  block-printer-server:
+    environment:
+      NODE_URL: ${NODE_URL}
+      MODEL_PATH: ${MODEL_PATH}
+    image: block-printer-server:latest
+    build:
+      context: ./
+      dockerfile: ./server-docker/Dockerfile
+    container_name: block-printer-server-container
+    init: true
+    command: >-
+      --node-url
+      ${NODE_URL}
+      ${MODEL_PATH}
+    network_mode: "host"
+    volumes:
+      - ./${MODEL_PATH}:/app/${MODEL_PATH}
+      - ./${TRAINING_DATA_PATH}:/app/${TRAINING_DATA_PATH}
