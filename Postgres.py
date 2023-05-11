@@ -68,7 +68,7 @@ class Postgres:
         if replace:
             cursor.execute(f"DROP TABLE IF EXISTS public.{table_name};")
         cursor.execute(
-            f"CREATE TABLE IF NOT EXISTS public.{table_name}({columns}, CONSTRAINT {table_name}_pkey PRIMARY KEY ({primary_key})) TABLESPACE pg_default; ALTER TABLE IF EXISTS public.{table_name} OWNER TO chain;"
+            f"CREATE TABLE IF NOT EXISTS public.{table_name}({columns}, CONSTRAINT {table_name}_pkey PRIMARY KEY ({primary_key})) TABLESPACE pg_default;"
         )
         self.conn.commit()
         cursor.close()
