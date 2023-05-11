@@ -135,15 +135,7 @@ def main():
     end = time.time()
     logging.info(f"Classifier loaded, took {end - start} seconds")
 
-    # try:
-    #     port, database, user, password, host = parse_db_endpoint_string(
-    #         args.postgres_endpoint
-    #     )
-    # except Exception as e:
-    #     logging.error("Error parsing postgres endpoint string: {}".format(e))
-    #     return
     logging.info("Connecting to database...")
-    # db = Postgres(port=port, host=host, user=user, password=password, database=database)
     db = Postgres(url=args.postgres_endpoint)
     logging.info("Connected to database")
     db.create_table(
