@@ -22,14 +22,25 @@ def parse_db_endpoint_string(s):
 
 
 class Postgres:
-    def __init__(self, port, user, password, database, host="localhost"):
+    def __init__(
+        self,
+        port=None,
+        user=None,
+        password=None,
+        database=None,
+        host="localhost",
+        url=None,
+    ):
         self.port = port
         self.user = user
         self.password = password
         self.database = database
-        self.conn = psycopg2.connect(
-            port=port, database=database, user=user, password=password, host=host
-        )
+        if url is not None:
+            self.conn = psycopg2.connect(url)
+        else:
+            self.conn = psycopg2.connect(
+                port=port, database=database, user=user, password=password, host=host
+            )
 
     def dict_query(self, sql):
         data = None
