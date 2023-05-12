@@ -1,0 +1,10 @@
+FROM python:3.11.3
+
+RUN apt-get install git
+
+COPY . /app/
+
+WORKDIR /app
+RUN pip install -r ./load-db-requirements.txt
+
+ENTRYPOINT [ "python", "load_db.py" ]

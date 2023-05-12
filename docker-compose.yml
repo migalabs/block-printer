@@ -4,10 +4,11 @@ services:
   block-printer-load-db:
     environment:
       POSTGRES_ENDPOINT: ${POSTGRES_ENDPOINT}
+      NODE_URL: ${NODE_URL}
     image: block-printer-load-db:latest
     build:
       context: ./
-      dockerfile: ./load-db-docker/Dockerfile
+      dockerfile: ./load-db-dockerfile
     container_name: block-printer-load-db-container
     init: true
     command: >-
@@ -26,7 +27,7 @@ services:
     image: block-printer-server:latest
     build:
       context: ./
-      dockerfile: ./server-docker/Dockerfile
+      dockerfile: ./server-dockerfile
     container_name: block-printer-server-container
     init: true
     command: >-
