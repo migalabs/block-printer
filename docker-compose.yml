@@ -14,12 +14,11 @@ services:
       --node-url
       ${NODE_URL}
       --model-folder
-      ${MODEL_PATH}
+      model
       ${POSTGRES_ENDPOINT}
     network_mode: "host"
     volumes:
-      - ./${MODEL_PATH}:/app/${MODEL_PATH}
-      - ./${TRAINING_DATA_PATH}:/app/${TRAINING_DATA_PATH}
+      - ./${MODEL_PATH}:/app/model
   block-printer-server:
     environment:
       NODE_URL: ${NODE_URL}
@@ -33,8 +32,7 @@ services:
     command: >-
       --node-url
       ${NODE_URL}
-      ${MODEL_PATH}
+      model
     network_mode: "host"
     volumes:
-      - ./${MODEL_PATH}:/app/${MODEL_PATH}
-      - ./${TRAINING_DATA_PATH}:/app/${TRAINING_DATA_PATH}
+      - ./${MODEL_PATH}:/app/model
