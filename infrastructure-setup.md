@@ -138,3 +138,37 @@ usage: build_db.py [-h] --db-path DB_PATH --data-dir DATA_DIR --classify-dir CLA
 `CLASSIFY_DIR` is the folder containing the blocks rewards, downloaded thanks to Lighthouse (the _training_data_folder_)
 
 ### Docker Images
+
+There are two docker-compose services defined in the `docker-compose.yml` file. You can build them using the following command:
+
+```bash
+docker-compose build
+```
+
+The parameters for the services are defined in the `.env` file. These parameters are:
+
+- `POSTGRES_ENDPOINT`: The endpoint of the postgres database. It will be used by the `block-printer-load-db` service to load the model data into the database. Example: `postgresql://postgres:postgres@localhost:5432/postgres`
+
+- `MODEL_PATH`: The folder containing the model data. It will be used by both services to make the guesses. Example: `model`
+
+- `NODE_URL`: The url of the node to use to fetch the data from the blockchain. It will be used by both services to fetch the data from the blockchain. Example: `http://localhost:5052`
+
+#### block-printer-server
+
+This service will run the `server.py` script in a docker container. It will be accessible on port `5000` of the host machine.
+
+To run it, you can use the following command:
+
+```bash
+docker-compose up block-printer-server
+```
+
+#### block-printer-load-db
+
+This service will run the `load_db.py` script in a docker container.
+
+To run it, you can use the following command:
+
+```bash
+docker-compose up block-printer-load-db
+```
