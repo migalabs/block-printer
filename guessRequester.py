@@ -109,6 +109,7 @@ def getSlotGuesses(
     logging.info(
         f"Downloaded {len(block_rewards)} blocks in {round(end_time - start_time, 2)} seconds. Found {end_slot - start_slot - len(block_rewards)+1} missing blocks."
     )
+    
     block_rewards_index = 0
     for i in range(end_slot - start_slot + 1):
         best_guess_multi = ""
@@ -116,7 +117,8 @@ def getSlotGuesses(
         probability_map = "{}"
         proposer_index = None
         slot_num = start_slot + i
-        if len(block_rewards) > 0:
+        # If it managed to download any blocks and if it hasn't reached the end of the downloaded blocks (i.e. there are missing blocks at the end)
+        if len(block_rewards) > 0 and block_rewards_index < len(block_rewards): 
             slot = block_rewards[block_rewards_index]
             if i == int(slot["meta"]["slot"]) - start_slot:
                 block_rewards_index += 1
