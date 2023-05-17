@@ -61,6 +61,7 @@ def loadSlotGuessesDatabase(
     )
 
     if guesses is not None:
+        start = time.time()
         db.insert_rows(
             "t_slot_client_guesses",
             (
@@ -72,6 +73,8 @@ def loadSlotGuessesDatabase(
             ),
             guesses,
         )
+        end = time.time()
+        logging.info("Inserted {} rows in {} seconds".format(len(guesses), end - start))
 
 
 def backfillSlots(
