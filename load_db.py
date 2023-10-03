@@ -1,6 +1,7 @@
 import argparse
 import logging
 import os
+import pickle
 import time
 import blockprint.knn_classifier as knn
 from guessRequester import getSlotGuesses, EndSlotUnkown
@@ -9,7 +10,9 @@ from Postgres import Postgres, parse_db_endpoint_string
 DEFAULT_MODEL_FOLDER = "model"
 DEFAULT_NODE_URL = "http://localhost:5052"
 DEFAULT_BACKFILLING_BATCH_SIZE = 10000
+TABLE_NAME = "t_slot_client_guesses"
 MAX_RETRIES = 5
+DEFAULT_PERSISTED_CLASSIFIER_FILE = "persisted_classifier.pkl"
 
 
 def parse_args():
@@ -18,7 +21,13 @@ def parse_args():
         "--model-folder",
         default=DEFAULT_MODEL_FOLDER,
         type=str,
-        help="Path to the folder with model files. Default: model",
+        help="Path to the folder with model files. It will be used to train the classifier if there isn't one persisted already. Default: model",
+    )
+    parser.add_argument(
+        "--persist",
+        default=False,
+        action="store_true",
+        help=f"Persist the classifier to disk after training. It will be stored in the root folder named {DEFAULT_PERSISTED_CLASSIFIER_FILE}",
     )
     parser.add_argument(
         "postgres_endpoint",
@@ -63,7 +72,7 @@ def loadSlotGuessesDatabase(
     if guesses is not None:
         start = time.time()
         db.insert_rows(
-            "t_slot_client_guesses",
+            TABLE_NAME,
             (
                 "f_slot",
                 "f_best_guess_single",
@@ -132,24 +141,34 @@ def main():
         exit(1)
 
     # Load the model
-    logging.info(f"Loading model from {model_folder}...")
     start = time.time()
-    classifier = knn.Classifier(model_folder)
+    if os.path.exists(DEFAULT_PERSISTED_CLASSIFIER_FILE):
+        logging.info(
+            f"Loading persisted classifier from {DEFAULT_PERSISTED_CLASSIFIER_FILE}..."
+        )
+        classifier = pickle.load(open(DEFAULT_PERSISTED_CLASSIFIER_FILE, "rb"))
+    else:
+        logging.info(f"Loading model from {model_folder}...")
+        classifier = knn.Classifier(model_folder)
     end = time.time()
     logging.info(f"Classifier loaded, took {end - start} seconds")
+
+    if args.persist:
+        logging.info(f"Persisting classifier to {DEFAULT_PERSISTED_CLASSIFIER_FILE}...")
+        knn.persist_classifier(
+            classifier, DEFAULT_PERSISTED_CLASSIFIER_FILE.split(".pkl")[0]
+        )
 
     logging.info("Connecting to database...")
     db = Postgres(url=args.postgres_endpoint)
     logging.info("Connected to database")
     db.create_table(
-        "t_slot_client_guesses",
+        TABLE_NAME,
         "f_slot integer, f_best_guess_single text, f_best_guess_multi text, f_probability_map text[], f_proposer_index integer",
         "f_slot",
         replace=reindex,
     )
-    last_slot_saved = db.dict_query("SELECT MAX(f_slot) FROM t_slot_client_guesses")[0][
-        "max"
-    ]
+    last_slot_saved = db.dict_query(f"SELECT MAX(f_slot) FROM {TABLE_NAME}")[0]["max"]
     if last_slot_saved is None:
         last_slot_saved = 0
     logging.info(f"Last slot saved: {last_slot_saved}")
@@ -157,9 +176,7 @@ def main():
     logging.info("Backfilling slots...")
     backfillSlots(last_slot_saved, classifier, model_folder, node_url, add_to_model, db)
 
-    last_slot_saved = db.dict_query("SELECT MAX(f_slot) FROM t_slot_client_guesses")[0][
-        "max"
-    ]
+    last_slot_saved = db.dict_query(f"SELECT MAX(f_slot) FROM {TABLE_NAME}")[0]["max"]
 
     while True:
         try:
