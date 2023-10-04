@@ -5,6 +5,7 @@ services:
     environment:
       POSTGRES_ENDPOINT: ${POSTGRES_ENDPOINT}
       NODE_URL: ${NODE_URL}
+      PERSISTED_CLASSIFIER_NAME: ${PERSISTED_CLASSIFIER_NAME}
     image: block-printer-load-db:latest
     build:
       context: ./
@@ -16,10 +17,13 @@ services:
       ${NODE_URL}
       --model-folder
       model
+      --persist-classifier
+      ${PERSISTED_CLASSIFIER_NAME}
       ${POSTGRES_ENDPOINT}
     network_mode: "host"
     volumes:
       - ./${MODEL_PATH}:/app/model
+      - ./persisted_classifier:/app/persisted_classifier
   block-printer-server:
     environment:
       NODE_URL: ${NODE_URL}
