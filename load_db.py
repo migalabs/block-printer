@@ -5,8 +5,8 @@ import pickle
 import time
 import blockprint.knn_classifier as knn
 import requests
-from guessRequester import getSlotGuesses, EndSlotUnkown
-from Postgres import Postgres, parse_db_endpoint_string
+from guess_requester import getSlotGuesses, EndSlotUnkown
+from postgres import Postgres, parse_db_endpoint_string
 
 DEFAULT_MODEL_FOLDER = "model"
 DEFAULT_NODE_URL = "http://localhost:5052"

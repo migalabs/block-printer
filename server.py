@@ -5,7 +5,7 @@ import os
 import time
 import logging
 from flask import Flask, request, jsonify
-from guessRequester import getSlotGuesses, EndSlotUnkown
+from guess_requester import getSlotGuesses, EndSlotUnkown
 import blockprint.knn_classifier as knn
 
 import argparse
