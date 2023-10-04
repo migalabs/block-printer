@@ -4,15 +4,13 @@ import os
 import pickle
 import time
 import blockprint.knn_classifier as knn
+import requests
 from guessRequester import getSlotGuesses, EndSlotUnkown
 from Postgres import Postgres, parse_db_endpoint_string
 
 DEFAULT_MODEL_FOLDER = "model"
 DEFAULT_NODE_URL = "http://localhost:5052"
 DEFAULT_BACKFILLING_BATCH_SIZE = 10000
-TABLE_NAME = "t_slot_client_guesses"
-MAX_RETRIES = 5
-
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Request a guess for a given slot")
@@ -54,6 +52,12 @@ def parse_args():
     return parser.parse_args()
 
 
+def get_node_head_slot(node_url):
+    response = requests.get(node_url + "/eth/v2/beacon/blocks/head")
+    head_slot_json = response.json()
+    return int(head_slot_json["data"]["message"]["slot"])
+
+
 def loadSlotGuessesDatabase(
     start_slot, end_slot, classifier, model_folder, node_url, add_to_model, db
 ):
@@ -82,46 +86,6 @@ def loadSlotGuessesDatabase(
         )
         end = time.time()
         logging.info("Inserted {} rows in {} seconds".format(len(guesses), end - start))
-
-
-def backfillSlots(
-    last_slot_saved, classifier, model_folder, node_url, add_to_model, db
-):
-    done = False
-    batch_size = DEFAULT_BACKFILLING_BATCH_SIZE
-    retries = 0
-    while not done:
-        try:
-            loadSlotGuessesDatabase(
-                last_slot_saved + 1,
-                last_slot_saved + batch_size,
-                classifier,
-                model_folder,
-                node_url,
-                add_to_model,
-                db,
-            )
-        except EndSlotUnkown:
-            if batch_size == 1:
-                done = True
-            else:
-                batch_size = int(batch_size / 2)
-                logging.info(
-                    "End slot unknown, reducing batch size to {}".format(batch_size)
-                )
-                continue
-        except Exception as e:
-            logging.error("Error while backfilling: {}".format(e))
-            if retries >= MAX_RETRIES:
-                logging.error("Max retries reached, aborting")
-                raise e
-            else:
-                retries += 1
-                logging.info("Retrying...")
-                time.sleep(5)
-                continue
-        retries = 0
-        last_slot_saved += DEFAULT_BACKFILLING_BATCH_SIZE
 
 
 def main():
@@ -186,28 +150,39 @@ def main():
         last_slot_saved = 0
     logging.info(f"Last slot saved: {last_slot_saved}")
 
-    logging.info("Backfilling slots...")
-    backfillSlots(last_slot_saved, classifier, model_folder, node_url, add_to_model, db)
-
-    last_slot_saved = db.dict_query(f"SELECT MAX(f_slot) FROM {TABLE_NAME}")[0]["max"]
-
     while True:
+        start = time.time()
         try:
-            loadSlotGuessesDatabase(
-                last_slot_saved + 1,
-                last_slot_saved + 1,
-                classifier,
-                model_folder,
-                node_url,
-                add_to_model,
-                db,
-            )
-        except EndSlotUnkown:
-            logging.info("End slot unknown, waiting for next slot")
-            time.sleep(1)
+            head_slot = get_node_head_slot(node_url)
+        except Exception as e:
+            logging.error(f"Error getting head slot: {e}. Retrying...")
+            time.sleep(5)
             continue
-        last_slot_saved += 1
-        time.sleep(12)
+        logging.info(f"Head slot: {head_slot}")
+        targetSlot = min(
+            last_slot_saved + DEFAULT_BACKFILLING_BATCH_SIZE,
+            head_slot,
+        )
+        if targetSlot > last_slot_saved:
+            try:
+                loadSlotGuessesDatabase(
+                    last_slot_saved + 1,
+                    targetSlot,
+                    classifier,
+                    model_folder,
+                    node_url,
+                    add_to_model,
+                    db,
+                )
+            except EndSlotUnkown:
+                logging.info("End slot unknown, waiting for next slot")
+                time.sleep(0.5)
+                continue
+            last_slot_saved += targetSlot - last_slot_saved
+            end = time.time()
+            time.sleep(max(0, 12 - (end - start)))
+        else:
+            time.sleep(0.5)
 
 
 if __name__ == "__main__":
