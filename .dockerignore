@@ -2,3 +2,4 @@ venv
 .env
 model
 training_data
+persisted_classifier
