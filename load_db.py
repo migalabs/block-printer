@@ -141,6 +141,8 @@ def main():
             )
             exit(1)
         persisted_classifier_path = f"persisted_classifier/{args.persist_classifier}"
+        if not os.path.exists("persisted_classifier"):
+            os.makedirs("persisted_classifier")
 
     print("Reindex: {}".format(reindex))
 
