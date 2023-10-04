@@ -12,7 +12,6 @@ DEFAULT_NODE_URL = "http://localhost:5052"
 DEFAULT_BACKFILLING_BATCH_SIZE = 10000
 TABLE_NAME = "t_slot_client_guesses"
 MAX_RETRIES = 5
-DEFAULT_PERSISTED_CLASSIFIER_FILE = "persisted_classifier.pkl"
 
 
 def parse_args():
@@ -24,10 +23,9 @@ def parse_args():
         help="Path to the folder with model files. It will be used to train the classifier if there isn't one persisted already. Default: model",
     )
     parser.add_argument(
-        "--persist",
-        default=False,
-        action="store_true",
-        help=f"Persist the classifier to disk after training. It will be stored in the root folder named {DEFAULT_PERSISTED_CLASSIFIER_FILE}",
+        "--persist-classifier",
+        type=str,
+        help=f"Persist the classifier to disk after training. It will be stored in the persisted_classifier folder with the name given as parameter. This name will also be used to load the classifier if it exists. The name should end with .pkl. Example: --persist-classifier my_classifier.pkl",
     )
     parser.add_argument(
         "postgres_endpoint",
@@ -135,29 +133,42 @@ def main():
     add_to_model = args.add_to_model
     node_url = args.node_url or DEFAULT_NODE_URL
     reindex = args.reindex or False
+    persisted_classifier_path = None
+    if args.persist_classifier:
+        if not args.persist_classifier.endswith(".pkl"):
+            logging.error(
+                f"Persisted classifier name should end with .pkl, got {args.persist_classifier}"
+            )
+            exit(1)
+        persisted_classifier_path = f"persisted_classifier/{args.persist_classifier}"
+
     print("Reindex: {}".format(reindex))
-    if not os.path.exists(model_folder):
-        logging.error(f"Model folder {model_folder} does not exist")
-        exit(1)
 
     # Load the model
     start = time.time()
-    if os.path.exists(DEFAULT_PERSISTED_CLASSIFIER_FILE):
+    if args.persist_classifier and os.path.exists(persisted_classifier_path):
         logging.info(
-            f"Loading persisted classifier from {DEFAULT_PERSISTED_CLASSIFIER_FILE}..."
+            f"Loading persisted classifier from {persisted_classifier_path}..."
         )
-        classifier = pickle.load(open(DEFAULT_PERSISTED_CLASSIFIER_FILE, "rb"))
+        classifier = pickle.load(open(persisted_classifier_path, "rb"))
     else:
+        if not os.path.exists(model_folder):
+            logging.error(
+                f"Model folder {model_folder} does not exist. Read the README.md for instructions on how to train the model"
+            )
+            exit(1)
         logging.info(f"Loading model from {model_folder}...")
         classifier = knn.Classifier(model_folder)
+
+    if persisted_classifier_path:
+        knn.persist_classifier(
+            classifier,
+            persisted_classifier_path.split(".pkl")[0],
+        )
+        logging.info(f"Persisting classifier to {persisted_classifier_path}...")
+
     end = time.time()
     logging.info(f"Classifier loaded, took {end - start} seconds")
-
-    if args.persist:
-        logging.info(f"Persisting classifier to {DEFAULT_PERSISTED_CLASSIFIER_FILE}...")
-        knn.persist_classifier(
-            classifier, DEFAULT_PERSISTED_CLASSIFIER_FILE.split(".pkl")[0]
-        )
 
     logging.info("Connecting to database...")
     db = Postgres(url=args.postgres_endpoint)

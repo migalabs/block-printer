@@ -122,7 +122,7 @@ usage: load_db.py [-h] [--model-folder MODEL_FOLDER] [--add-to-model] [--node-ur
 - `--node-url` NODE_URL URL of the beacon node to download blocks from (default: http://localhost:5052)
 
 - `--reindex` Reindex the database. WARNING: This will delete all data in the database and reindex all slots from the beacon node. Useful if the model was updated
-- `--persist` Persist the classifier to disk after training. It will be stored in the root folder named `persisted_classifier.pkl`. This will allow to load the classifier from disk instead of retraining it every time the script is run, saving a lot of time on the cost of storing just a few KBs of data.
+- `--persist-classifier` PERSIST_CLASSIFIER Persist the classifier to disk after training. It will be stored in the persisted_classifier folder with the name given as parameter. This name will also be used to load the classifier if it exists. The name should end with .pkl. Example: `--persist-classifier my_classifier.pkl`. This will allow to load the classifier from disk instead of retraining it every time the script is run, saving a lot of time on the cost of storing just a few KBs of data.
 
 The script starts a backfilling process that will load all the guesses up to the current slot. It will then start a process that will listen to new blocks and add them to the database.
 
