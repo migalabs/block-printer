@@ -6,4 +6,4 @@ training_data/
 *.sqlite
 venv
 .vscode
-persisted_classifier.pkl
+persisted_classifier
