@@ -11,6 +11,7 @@ from postgres import Postgres, parse_db_endpoint_string
 DEFAULT_MODEL_FOLDER = "model"
 DEFAULT_NODE_URL = "http://localhost:5052"
 DEFAULT_BACKFILLING_BATCH_SIZE = 10000
+TABLE_NAME = "t_slot_client_guesses"
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Request a guess for a given slot")
