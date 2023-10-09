@@ -1,9 +1,16 @@
+# IDE
+.vscode
+.idea
+
+# Results/models
 *.csv
-.env
-__pycache__/
 model/
 training_data/
-*.sqlite
-venv
-.vscode
 persisted_classifier
+
+# Configurations
+.env
+
+# Python related
+venv
+__pycache__/
