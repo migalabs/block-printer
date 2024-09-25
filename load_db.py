@@ -3,7 +3,7 @@ import logging
 import os
 import pickle
 import time
-import blockprint.knn_classifier as knn
+from blockprint.classifier import Classifier,persist_classifier
 import requests
 from guess_requester import getSlotGuesses, EndSlotUnkown
 from postgres import Postgres, parse_db_endpoint_string
@@ -125,10 +125,10 @@ def main():
             )
             exit(1)
         logging.info(f"Loading model from {model_folder}...")
-        classifier = knn.Classifier(model_folder)
+        classifier = Classifier(model_folder)
 
     if persisted_classifier_path:
-        knn.persist_classifier(
+        persist_classifier(
             classifier,
             persisted_classifier_path.split(".pkl")[0],
         )
