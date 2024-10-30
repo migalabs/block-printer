@@ -6,8 +6,7 @@ import time
 import logging
 from flask import Flask, request, jsonify
 from guess_requester import getSlotGuesses, EndSlotUnkown
-import blockprint.knn_classifier as knn
-
+from blockprint.classifier import Classifier
 import argparse
 
 app = Flask(__name__)
@@ -106,7 +105,7 @@ if __name__ == "__main__":
     # Load the model
     logging.info(f"Loading model from {model_folder}...")
     start = time.time()
-    classifier = knn.Classifier(model_folder)
+    classifier = Classifier(model_folder)
     end = time.time()
     logging.info(f"Classifier loaded, took {end - start} seconds")
 

@@ -4,7 +4,7 @@ import argparse
 import logging
 import os
 import time
-import blockprint.knn_classifier as knn
+from blockprint.classifier import Classifier
 import blockprint.load_blocks as lb
 import blockprint.prepare_training_data as pt
 import requests
@@ -211,7 +211,7 @@ def main():
     # Load the model
     logging.info("Loading Classifier...")
     start = time.time()
-    classifier = knn.Classifier(model_folder)
+    classifier = Classifier(model_folder)
     end = time.time()
     logging.info("Classifier loaded, took %.2f seconds" % (end - start))
 

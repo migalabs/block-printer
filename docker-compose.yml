@@ -11,6 +11,7 @@ services:
       context: ./
       dockerfile: ./load-db-dockerfile
     container_name: block-printer-load-db-container
+    restart: "always"
     init: true
     command: >-
       --node-url
@@ -22,7 +23,7 @@ services:
       ${POSTGRES_ENDPOINT}
     network_mode: "host"
     volumes:
-      - ./${MODEL_PATH}:/app/model
+      - ${MODEL_PATH}:/app/model
       - ./persisted_classifier:/app/persisted_classifier
   block-printer-server:
     environment:

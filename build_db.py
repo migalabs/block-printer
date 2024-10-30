@@ -2,7 +2,7 @@
 
 import argparse
 from blockprint.build_db import build_block_db
-from blockprint.knn_classifier import Classifier
+from blockprint.classifier import Classifier
 
 from blockprint.multi_classifier import MultiClassifier
 
