@@ -3,7 +3,7 @@ import logging
 import os
 import pickle
 import time
-from blockprint.classifier import Classifier,persist_classifier
+from blockprint.classifier import Classifier,persist_classifier,VIABLE_FEATURES
 import requests
 from guess_requester import getSlotGuesses, EndSlotUnkown
 from postgres import Postgres, parse_db_endpoint_string
@@ -125,7 +125,7 @@ def main():
             )
             exit(1)
         logging.info(f"Loading model from {model_folder}...")
-        classifier = Classifier(model_folder)
+        classifier = Classifier(model_folder,graffiti_only_clients=[],features=VIABLE_FEATURES,classifier_type="mlp",hidden_layer_sizes=(1165))
 
     if persisted_classifier_path:
         persist_classifier(
