@@ -69,10 +69,12 @@ def add_to_model_if_possible(model_folder, block_reward):
 
 def parse_probability_map(probability_map, threshold=0.2):
     formatted = []
+    if probability_map == "{}":
+        return formatted
     for key, value in probability_map.items():
         if value >= threshold:
             formatted.append(f"{key}:{int(value*100)}")
-    return "{" + ", ".join(formatted) + "}"
+    return formatted
 
 
 def getSlotGuesses(
@@ -109,16 +111,16 @@ def getSlotGuesses(
     logging.info(
         f"Downloaded {len(block_rewards)} blocks in {round(end_time - start_time, 2)} seconds. Found {end_slot - start_slot - len(block_rewards)+1} missing blocks."
     )
-    
+
     block_rewards_index = 0
     for i in range(end_slot - start_slot + 1):
         best_guess_multi = ""
         best_guess_single = ""
         probability_map = "{}"
-        proposer_index = None
+        proposer_index = 0
         slot_num = start_slot + i
         # If it managed to download any blocks and if it hasn't reached the end of the downloaded blocks (i.e. there are missing blocks at the end)
-        if len(block_rewards) > 0 and block_rewards_index < len(block_rewards): 
+        if len(block_rewards) > 0 and block_rewards_index < len(block_rewards):
             slot = block_rewards[block_rewards_index]
             if i == int(slot["meta"]["slot"]) - start_slot:
                 block_rewards_index += 1
@@ -131,9 +133,8 @@ def getSlotGuesses(
                     return
                 best_guess_single, best_guess_multi, probability_map, _ = guess
                 proposer_index = int(slot["meta"]["proposer_index"])
-                if db_format:
-                    probability_map = parse_probability_map(probability_map)
         if db_format:
+            probability_map = parse_probability_map(probability_map)
             guesses.append(
                 (
                     slot_num,
