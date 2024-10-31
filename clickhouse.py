@@ -1,5 +1,7 @@
 import clickhouse_connect
 
+TABLE_NAME = "t_slot_client_guesses"
+
 
 class ClickHouseDB:
     def __init__(self, dsn):
@@ -7,7 +9,7 @@ class ClickHouseDB:
 
     def create_table(self):
         self.client.query(
-            """CREATE TABLE IF NOT EXISTS t_slot_client_guesses
+            f"""CREATE TABLE IF NOT EXISTS {TABLE_NAME}
                 (
                     f_slot UInt64,
                     f_best_guess_single String,
@@ -19,13 +21,13 @@ class ClickHouseDB:
         )
 
     def get_max_slot(self):
-        query_res = self.client.query("SELECT MAX(f_slot) FROM t_slot_client_guesses")
+        query_res = self.client.query(f"SELECT MAX(f_slot) FROM {TABLE_NAME}")
         return query_res.first_row[0]
 
     def insert_client_guesses(self, guesses):
         # guesses = convert_to_clickhouse_format(guesses)
         self.client.insert(
-            "t_slot_client_guesses",
+            TABLE_NAME,
             guesses,
         )
 
