@@ -3,15 +3,15 @@ import logging
 import os
 import pickle
 import time
-from blockprint.classifier import Classifier,persist_classifier,VIABLE_FEATURES
+from blockprint.classifier import Classifier, persist_classifier, VIABLE_FEATURES
 import requests
 from guess_requester import getSlotGuesses, EndSlotUnkown
-from postgres import Postgres, parse_db_endpoint_string
+from clickhouse import ClickHouseDB
 
 DEFAULT_MODEL_FOLDER = "model"
 DEFAULT_NODE_URL = "http://localhost:5052"
 DEFAULT_BACKFILLING_BATCH_SIZE = 10000
-TABLE_NAME = "t_slot_client_guesses"
+
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Request a guess for a given slot")
@@ -27,9 +27,9 @@ def parse_args():
         help=f"Persist the classifier to disk after training. It will be stored in the persisted_classifier folder with the name given as parameter. This name will also be used to load the classifier if it exists. The name should end with .pkl. Example: --persist-classifier my_classifier.pkl",
     )
     parser.add_argument(
-        "postgres_endpoint",
+        "clickhouse_endpoint",
         type=str,
-        help="Postgres endpoint. Example: postgresql://user:password@host:port/dbname",
+        help="Clickhouse endpoint. Example: http://USER:PASSWORD@localhost:8123/DB_NAME",
     )
     parser.add_argument(
         "--add-to-model",
@@ -74,17 +74,7 @@ def loadSlotGuessesDatabase(
 
     if guesses is not None:
         start = time.time()
-        db.insert_rows(
-            TABLE_NAME,
-            (
-                "f_slot",
-                "f_best_guess_single",
-                "f_best_guess_multi",
-                "f_probability_map",
-                "f_proposer_index",
-            ),
-            guesses,
-        )
+        db.insert_client_guesses(guesses)
         end = time.time()
         logging.info("Inserted {} rows in {} seconds".format(len(guesses), end - start))
 
@@ -125,7 +115,13 @@ def main():
             )
             exit(1)
         logging.info(f"Loading model from {model_folder}...")
-        classifier = Classifier(model_folder,graffiti_only_clients=[],features=VIABLE_FEATURES,classifier_type="mlp",hidden_layer_sizes=(1165))
+        classifier = Classifier(
+            model_folder,
+            graffiti_only_clients=[],
+            features=VIABLE_FEATURES,
+            classifier_type="mlp",
+            hidden_layer_sizes=(1165),
+        )
 
     if persisted_classifier_path:
         persist_classifier(
@@ -138,15 +134,11 @@ def main():
     logging.info(f"Classifier loaded, took {end - start} seconds")
 
     logging.info("Connecting to database...")
-    db = Postgres(url=args.postgres_endpoint)
+    db_client = ClickHouseDB(args.clickhouse_endpoint)
     logging.info("Connected to database")
-    db.create_table(
-        TABLE_NAME,
-        "f_slot integer, f_best_guess_single text, f_best_guess_multi text, f_probability_map text[], f_proposer_index integer",
-        "f_slot",
-        replace=reindex,
-    )
-    last_slot_saved = db.dict_query(f"SELECT MAX(f_slot) FROM {TABLE_NAME}")[0]["max"]
+    db_client.create_table()
+
+    last_slot_saved = db_client.get_max_slot()
     if last_slot_saved is None:
         last_slot_saved = 0
     logging.info(f"Last slot saved: {last_slot_saved}")
@@ -173,7 +165,7 @@ def main():
                     model_folder,
                     node_url,
                     add_to_model,
-                    db,
+                    db_client,
                 )
             except EndSlotUnkown:
                 logging.info("End slot unknown, waiting for next slot")

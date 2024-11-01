@@ -1,6 +1,4 @@
-FROM python:3.11.3
-
-RUN apt-get install git
+FROM python:3.12.3
 
 COPY . /app/
 

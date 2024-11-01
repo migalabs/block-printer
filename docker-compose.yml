@@ -3,7 +3,7 @@ version: "3.7"
 services:
   block-printer-load-db:
     environment:
-      POSTGRES_ENDPOINT: ${POSTGRES_ENDPOINT}
+      CLICKHOUSE_ENDPOINT: ${CLICKHOUSE_ENDPOINT}
       NODE_URL: ${NODE_URL}
       PERSISTED_CLASSIFIER_NAME: ${PERSISTED_CLASSIFIER_NAME}
     image: block-printer-load-db:latest
@@ -20,10 +20,10 @@ services:
       model
       --persist-classifier
       ${PERSISTED_CLASSIFIER_NAME}
-      ${POSTGRES_ENDPOINT}
+      ${CLICKHOUSE_ENDPOINT}
     network_mode: "host"
     volumes:
-      - ${MODEL_PATH}:/app/model
+      - ./${MODEL_PATH}:/app/model
       - ./persisted_classifier:/app/persisted_classifier
   block-printer-server:
     environment:
