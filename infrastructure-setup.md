@@ -107,12 +107,12 @@ The response will be a JSON object containing the following fields:
 
 ### Build the database
 
-#### Postgres database
+#### Clickhouse database
 
-The script `load_db.py` will allow you to load the model data into a postgres database.
+The script `load_db.py` will allow you to load the model data into a clickhouse database. The `clickhouse_endpoint` introduced should be an http endpoint to the clickhouse database. Example: `http://USER:PASSWORD@localhost:8123/DB_NAME`.
 
 ```bash
-usage: load_db.py [-h] [--model-folder MODEL_FOLDER] [--add-to-model] [--node-url NODE_URL] [--reindex] postgres_endpoint
+usage: load_db.py [-h] [--model-folder MODEL_FOLDER] [--add-to-model] [--node-url NODE_URL] [--reindex] clickhouse_endpoint
 ```
 
 - `--model-folder` MODEL_FOLDER Path to the folder with model files. It will be used to train the classifier if there isn't one persisted already. Default: model
@@ -148,7 +148,7 @@ docker-compose build
 
 The parameters for the services are defined in the `.env` file. These parameters are:
 
-- `POSTGRES_ENDPOINT`: The endpoint of the postgres database. It will be used by the `block-printer-load-db` service to load the model data into the database. Example: `postgresql://postgres:postgres@localhost:5432/postgres`
+- `CLICKHOUSE_ENDPOINT`: The endpoint of the clickhouse database. It will be used by the `block-printer-load-db` service to load the model data into the database. Example: `http://USER:PASSWORD@localhost:8123/DB_NAME`
 
 - `MODEL_PATH`: The folder containing the model data. It will be used by both services to make the guesses. Example: `model`
 
@@ -171,5 +171,5 @@ This service will run the `load_db.py` script in a docker container.
 To run it, you can use the following command:
 
 ```bash
-docker-compose up block-printer-load-db
+docker-compose up -d block-printer-load-db
 ```
